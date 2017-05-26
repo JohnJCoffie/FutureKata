@@ -34,6 +34,6 @@ class AcmeCorpDirectoryService(directoryRepo: CompanyDirectoryRepository) extend
   def totalExperience: Future[Int] =
     for {
       departmentNames <- directoryRepo.fetchDepartments
-      departmentsExperience <- Future.sequence(departmentNames.map(departmentTotalExperience(_)))
-    } yield departmentsExperience.sum
+      employees: List[List[Employee]] <- Future.traverse(departmentNames)(directoryRepo.fetchEmployees)
+    } yield employees.flatten.map(_.yearsOfExperience).sum
 }
