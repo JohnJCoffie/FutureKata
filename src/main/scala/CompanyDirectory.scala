@@ -15,9 +15,34 @@ trait CompanyDirectoryService {
 }
 
 class AcmeCorpDirectoryService(directoryRepo: CompanyDirectoryRepository) extends CompanyDirectoryService {
-  def employeeNames(department: String): Future[List[String]] = ???
 
-  def departmentTotalExperience: String => Future[Int] = ???
+  def employeeNames(department: String): Future[List[String]] = for {
+    employees <- directoryRepo.fetchEmployees(department)
+    names = for {
+      employee <- employees
+    } yield employee.name
+  } yield names
 
-  def totalExperience: Future[Int] = ???
+  def departmentTotalExperience: String => Future[Int] =
+    department => for {
+      employees <- directoryRepo.fetchEmployees(department)
+      experience = for {
+        employee <- employees
+      } yield employee.yearsOfExperience
+    } yield experience.sum
+
+  def totalExperience: Future[Int] =
+    for {
+      departmentNames <- directoryRepo.fetchDepartments
+      departmentsFutureExperience = for {
+        departmentName <- departmentNames
+        departmentExperience = for {
+          departmentEmployees <- directoryRepo.fetchEmployees(departmentName)
+          departmentExperience = for {
+            employee <- departmentEmployees
+          } yield employee.yearsOfExperience
+        } yield departmentExperience.sum
+      } yield departmentExperience
+      futureDepartmentsExperience <- Future.sequence(departmentsFutureExperience)
+    } yield futureDepartmentsExperience.sum
 }
